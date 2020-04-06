@@ -1,14 +1,50 @@
-from utils.utils import loadImages, loadDataY, DATA_TYPE
+from utils.utils import loadImages, loadDataY, DATA_TYPE, check_and_retrieveVocabulary
+from model.ctc_keras import get_model
+from sklearn.utils import shuffle
 import numpy as np
+import cv2
 
 
 def CTCKRN():
     fixed_height = 32
-    XTrain = loadImages("./Dataset/train.lst")
-    YTrain = loadDataY("./Dataset/train.lst", (DATA_TYPE.KERN).value)
+
+    print("Loading training data...")
+    XTrain = loadImages("./Dataset/train.lst", 30000)
+    YTrain = loadDataY("./Dataset/train.lst", (DATA_TYPE.KERN).value, 30000)
     print(XTrain.shape)
     print(YTrain.shape)
+
+    print("Loading validation data...")
+    XValidate = loadImages("./Dataset/validation.lst", 15000)
+    YValidate = loadDataY("./Dataset/validation.lst", (DATA_TYPE.KERN).value, 15000)
+    print(XValidate.shape)
+    print(YValidate.shape)
+
+    XTrain, YTrain = shuffle(XTrain, YTrain)
+    XValidate, YValidate = shuffle(XValidate, YValidate)
+
+    w2i, i2w = check_and_retrieveVocabulary([YTrain, YValidate], "./vocabulary", "imageToKern")
+
+    print("Vocabulary size: " + str(len(w2i)))
+
+    for i in range(min(len(XTrain), len(YTrain))):
+        img = (255. - XTrain[i]) / 255.
+        width = int(float(fixed_height * img.shape[1]) / img.shape[0])
+        XTrain[i] = cv2.resize(img, (width, fixed_height))
+        for idx, symbol in enumerate(YTrain[i]):
+            YTrain[i][idx] = w2i[symbol]
     
+    for i in range(min(len(XValidate), len(YValidate))):
+        img = (255. - XValidate[i]) / 255.
+        width = int(float(fixed_height * img.shape[1]) / img.shape[0])
+        XValidate[i] = cv2.resize(img, (width, fixed_height))
+        for idx, symbol in enumerate(YValidate[i]):
+            YValidate[i][idx] = w2i[symbol]
+
+    vocabulary_size = len(w2i)
+    model_tr, model_pr = get_model(input_shape=(fixed_height,None,1),vocabulary_size=vocabulary_size)
+
+    print("Everything went OK")
 # ==============================================================
 #
 #                           MAIN

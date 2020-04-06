@@ -2,6 +2,8 @@ import numpy as np
 from enum import Enum
 import cv2
 import sys
+import tqdm
+from os import path
 
 class DATA_TYPE(Enum):
     AGNOSTIC = 1
@@ -10,8 +12,9 @@ class DATA_TYPE(Enum):
 
 
 #It only loads our images, so we can dynamically load the Y making no more functions
-def loadImages(dataFile):
+def loadImages(dataFile, samples):
     X = []
+    loadedSamples = 0
     with open(dataFile) as paths:
         line = paths.readline()
         while line:
@@ -19,15 +22,19 @@ def loadImages(dataFile):
             image = cv2.imread(imagePath)
             X.append(image)
             line = paths.readline()
+            loadedSamples+=1
+            if loadedSamples == samples:
+                break
     
     return np.array(X)
 
 #Inputs
 #@dataFile -> Input File to get the data
 #@dataToLoadY -> Value from the enum
-def loadDataY(dataFile, type):
+def loadDataY(dataFile, type, samples):
     Y = [] 
     YSequence = []
+    loadedSamples = 0
     with open(dataFile) as paths:
         line = paths.readline()
         while line:
@@ -38,7 +45,7 @@ def loadDataY(dataFile, type):
             if(type == (DATA_TYPE.KERN).value or type == (DATA_TYPE.SKM).value):
                 krnLines = yfile.readlines()
                 for i, line in enumerate(krnLines):
-                    line = line.split("\n")[0] #Dumb trick to get just the characters without the special indents
+                    line = line.split("\n")[0] #Dumb trick to get the characters without breaks
                     krnLines[i] = line
                 YSequence = krnLines
             else:
@@ -48,6 +55,10 @@ def loadDataY(dataFile, type):
             YSequence = []
             yfile.close()
             line = paths.readline()
+
+            loadedSamples += 1
+            if loadedSamples == samples:
+                break
     
     return np.array(Y)
 
@@ -116,3 +127,35 @@ def data_preparation_CTC(X, Y, height):
 
 
     return X_train, Y_train, L_train, T_train
+
+def check_and_retrieveVocabulary(YSequences, pathOfSequences, nameOfVoc):
+    w2ipath = pathOfSequences + "/" + nameOfVoc + "w2i.npy"
+    i2wpath = pathOfSequences + "/" + nameOfVoc + "i2w.npy"
+
+    w2i = []
+    i2w = []
+
+    if path.isfile(w2ipath):
+        w2i = np.load(w2ipath, allow_pickle=True).items()
+        i2w = np.load(i2wpath, allow_pickle=True).items()
+    else:
+        w2i, i2w = make_vocabulary(YSequences, pathOfSequences, nameOfVoc)
+
+    return w2i, i2w
+
+def make_vocabulary(YSequences, pathToSave, nameOfVoc):
+    vocabulary = set()
+    for samples in YSequences:
+        for sequence in samples:
+            for element in sequence:
+                vocabulary.update(element)
+    
+    #Vocabulary created
+    w2i = {symbol:idx for idx,symbol in enumerate(vocabulary)}
+    i2w = {idx:symbol for idx,symbol in enumerate(vocabulary)}
+
+    #Save the vocabulary
+    np.save(pathToSave + "/" + nameOfVoc + "w2i.npy", w2i)
+    np.save(pathToSave + "/" + nameOfVoc + "i2w.npy", i2w)
+
+    return w2i, i2w
