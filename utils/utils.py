@@ -3,6 +3,7 @@ from enum import Enum
 import cv2
 import sys
 import tqdm
+import itertools
 from os import path
 
 class DATA_TYPE(Enum):
@@ -19,20 +20,20 @@ def loadImages(dataFile, samples):
         line = paths.readline()
         while line:
             imagePath = line.split("\t")[0]
-            image = cv2.imread(imagePath)
+            image = cv2.imread(imagePath, False)
             X.append(image)
             line = paths.readline()
             loadedSamples+=1
             if loadedSamples == samples:
                 break
-    
+
     return np.array(X)
 
 #Inputs
 #@dataFile -> Input File to get the data
 #@dataToLoadY -> Value from the enum
 def loadDataY(dataFile, type, samples):
-    Y = [] 
+    Y = []
     YSequence = []
     loadedSamples = 0
     with open(dataFile) as paths:
@@ -59,7 +60,7 @@ def loadDataY(dataFile, type, samples):
             loadedSamples += 1
             if loadedSamples == samples:
                 break
-    
+
     return np.array(Y)
 
 def levenshtein(a,b):
@@ -136,8 +137,8 @@ def check_and_retrieveVocabulary(YSequences, pathOfSequences, nameOfVoc):
     i2w = []
 
     if path.isfile(w2ipath):
-        w2i = np.load(w2ipath, allow_pickle=True).items()
-        i2w = np.load(i2wpath, allow_pickle=True).items()
+        w2i = np.load(w2ipath, allow_pickle=True).item()
+        i2w = np.load(i2wpath, allow_pickle=True).item()
     else:
         w2i, i2w = make_vocabulary(YSequences, pathOfSequences, nameOfVoc)
 
@@ -147,9 +148,8 @@ def make_vocabulary(YSequences, pathToSave, nameOfVoc):
     vocabulary = set()
     for samples in YSequences:
         for sequence in samples:
-            for element in sequence:
-                vocabulary.update(element)
-    
+            vocabulary.update(sequence)
+
     #Vocabulary created
     w2i = {symbol:idx for idx,symbol in enumerate(vocabulary)}
     i2w = {idx:symbol for idx,symbol in enumerate(vocabulary)}

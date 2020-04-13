@@ -1,4 +1,4 @@
-from utils.utils import loadImages, loadDataY, DATA_TYPE, check_and_retrieveVocabulary
+from utils.utils import loadImages, loadDataY, DATA_TYPE, check_and_retrieveVocabulary, data_preparation_CTC, validateCTC
 from model.ctc_keras import get_model
 from sklearn.utils import shuffle
 import numpy as np
@@ -9,14 +9,14 @@ def CTCKRN():
     fixed_height = 32
 
     print("Loading training data...")
-    XTrain = loadImages("./Dataset/train.lst", 30000)
-    YTrain = loadDataY("./Dataset/train.lst", (DATA_TYPE.KERN).value, 30000)
+    XTrain = loadImages("./Dataset/train.lst", 100)
+    YTrain = loadDataY("./Dataset/train.lst", (DATA_TYPE.SKM).value, 100)
     print(XTrain.shape)
     print(YTrain.shape)
 
     print("Loading validation data...")
-    XValidate = loadImages("./Dataset/validation.lst", 15000)
-    YValidate = loadDataY("./Dataset/validation.lst", (DATA_TYPE.KERN).value, 15000)
+    XValidate = loadImages("./Dataset/validation.lst", 100)
+    YValidate = loadDataY("./Dataset/validation.lst", (DATA_TYPE.SKM).value, 100)
     print(XValidate.shape)
     print(YValidate.shape)
 
@@ -44,7 +44,29 @@ def CTCKRN():
     vocabulary_size = len(w2i)
     model_tr, model_pr = get_model(input_shape=(fixed_height,None,1),vocabulary_size=vocabulary_size)
 
-    print("Everything went OK")
+    X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain, fixed_height)
+
+    print('Training with ' + str(X_train.shape[0]) + ' samples.')
+    
+    inputs = {'the_input': X_train,
+                 'the_labels': Y_train,
+                 'input_length': L_train,
+                 'label_length': T_train,
+                 }
+    
+    outputs = {'ctc': np.zeros([len(X_train)])}
+    best_ser = 100
+
+    for super_epoch in range(50):
+       model_tr.fit(inputs,outputs, batch_size = 16, epochs = 5, verbose = 2)
+       ser = validateCTC(model_pr, XValidate, YValidate, i2w)
+       if ser < best_ser:
+           best_ser = ser
+           #model_pr.save(args.save_model)
+           #print('SER Improved -> Saving model to {}'.format(args.save_model))
+           print('SER Improved -> Saving model to')
+
+
 # ==============================================================
 #
 #                           MAIN
