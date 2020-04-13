@@ -64,9 +64,9 @@ def CTCTraining(output):
        ser = validateCTC(model_pr, XValidate, YValidate, i2w)
        if ser < best_ser:
            best_ser = ser
-           #model_pr.save(args.save_model)
-           #print('SER Improved -> Saving model to {}'.format(args.save_model))
-           print('SER Improved -> Saving model to')
+           model_pr.save("model/checkpoints/" + vocabularyNames[output-1] + "_model")
+           print('SER Improved -> Saving model to {}'.format("model/checkpoints/" + vocabularyNames[output-1] + "_model"))
+           #print('SER Improved -> Saving model to')
 
 
 # ==============================================================
