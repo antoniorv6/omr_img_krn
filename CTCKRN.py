@@ -5,25 +5,27 @@ import numpy as np
 import cv2
 
 
-def CTCKRN():
+vocabularyNames = ["agnostic", "kern", "skern"]
+
+def CTCTraining(output):
     fixed_height = 32
 
     print("Loading training data...")
     XTrain = loadImages("./Dataset/train.lst", 100)
-    YTrain = loadDataY("./Dataset/train.lst", (DATA_TYPE.SKM).value, 100)
+    YTrain = loadDataY("./Dataset/train.lst", output, 100)
     print(XTrain.shape)
     print(YTrain.shape)
 
     print("Loading validation data...")
     XValidate = loadImages("./Dataset/validation.lst", 100)
-    YValidate = loadDataY("./Dataset/validation.lst", (DATA_TYPE.SKM).value, 100)
+    YValidate = loadDataY("./Dataset/validation.lst", output, 100)
     print(XValidate.shape)
     print(YValidate.shape)
 
     XTrain, YTrain = shuffle(XTrain, YTrain)
     XValidate, YValidate = shuffle(XValidate, YValidate)
 
-    w2i, i2w = check_and_retrieveVocabulary([YTrain, YValidate], "./vocabulary", "imageToKern")
+    w2i, i2w = check_and_retrieveVocabulary([YTrain, YValidate], "./vocabulary", vocabularyNames[output-1])
 
     print("Vocabulary size: " + str(len(w2i)))
 

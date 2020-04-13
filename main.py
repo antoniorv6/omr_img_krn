@@ -1,5 +1,6 @@
-from CTCKRN import CTCKRN
+from CTCKRN import CTCTraining
+from utils.utils import DATA_TYPE
 
 
 if __name__ == "__main__":
-    CTCKRN()
+    CTCTraining((DATA_TYPE.SKM).value)
