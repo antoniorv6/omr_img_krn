@@ -159,3 +159,56 @@ def make_vocabulary(YSequences, pathToSave, nameOfVoc):
     np.save(pathToSave + "/" + nameOfVoc + "i2w.npy", i2w)
 
     return w2i, i2w
+
+def batch_confection_encoder(batchX, batchY, targetLength, w2iagnostic, w2ikern):
+    max_batch_input_len = max([len(sequence) for sequence in batchX])
+    max_batch_output_len = max([len(sequence) for sequence in batchY])
+
+    encoder_input = np.zeros((len(batchX), max_batch_input_len), dtype=np.float)
+    decoder_input = np.zeros((len(batchY), max_batch_output_len + 1), dtype=np.float)
+    decoder_output = np.zeros((len(batchY), max_batch_output_len + 1, targetLength), dtype=np.float)
+
+    for i, sequence in enumerate(batchX):
+        for j, char in enumerate(sequence):
+            encoder_input[i][j] = w2iagnostic[char]
+
+    for i, sequence in enumerate(batchY):
+        for j, char in enumerate(sequence):
+           
+           decoder_input[i][j] = 0
+            
+           if j > 0:
+               decoder_output[i][j - 1][w2ikern[char]] = 1.
+
+    return encoder_input, decoder_input, decoder_output
+
+def batch_generator_encoder(X, Y, batch_size, targetLength, w2iagnostic, w2itarget):
+    index = 0
+    while True:
+        BatchX = X[index:index + batch_size]
+        BatchY = Y[index:index + batch_size]
+
+        encoder_input, decoder_input, decoder_output = batch_confection_encoder(BatchX, BatchY, targetLength, w2iagnostic, w2itarget)
+
+        yield [encoder_input, decoder_input], decoder_output
+
+        index = (index + batch_size) % len(X)
+
+def test_encoderSequence(sequence, model, w2itarget, i2wtarget, trueSequence):
+    decoded = [0]
+    predicted = []
+
+    trueSequence = [[i2wtarget[i] for i in trueSequence]]
+
+    for i in range(1, 500):
+        decoder_input = np.asarray([decoded])
+        
+        prediction = model.predict([[sequence], decoder_input])
+        decoded.append(0)
+
+        if i2wtarget[np.argmax(prediction[0][-1])] == '</s>':
+            break
+        
+        predicted.append(i2wtarget[np.argmax(prediction[0][-1])])
+
+    return predicted, trueSequence
