@@ -8,16 +8,16 @@ vocabularyNames = ["enc_agnostic", "enc_kern", "enc_skern"]
 BATCH_SIZE = 8
 TRAINEPOCHS = 30
 
-#This encoder is only for agnostic to (kern - SKM), so we only need to define few constants
-def EncoderTrain(output):
+#This encoder is only for agnostic to (kern - SKM)
+def EncoderTrain(output, data_path):
      
      #Load train data
-     XTrain = loadDataY("./Dataset/train.lst", (DATA_TYPE.AGNOSTIC).value, 100)
-     YTrain = loadDataY("./Dataset/train.lst", output, 100)
+     XTrain = loadDataY(data_path, data_path + "/train.lst", (DATA_TYPE.AGNOSTIC).value, 100)
+     YTrain = loadDataY(data_path, data_path + "/train.lst", output, 100)
 
      #Load test data
-     XValidate = loadDataY("./Dataset/validation.lst", (DATA_TYPE.AGNOSTIC).value, 100)
-     YValidate = loadDataY("./Dataset/validation.lst", output, 100)
+     XValidate = loadDataY(data_path, data_path + "/validation.lst", (DATA_TYPE.AGNOSTIC).value, 100)
+     YValidate = loadDataY(data_path, data_path + "/validation.lst", output, 100)
 
      #Prepare the vocabulary
      XTrain, YTrain = shuffle(XTrain, YTrain)

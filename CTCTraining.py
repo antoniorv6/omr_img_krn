@@ -7,18 +7,18 @@ import cv2
 
 vocabularyNames = ["agnostic", "kern", "skern"]
 
-def CTCTraining(output):
+def CTCTraining(output, data_path):
     fixed_height = 32
 
     print("Loading training data...")
-    XTrain = loadImages("./Dataset/train.lst", 100)
-    YTrain = loadDataY("./Dataset/train.lst", output, 100)
+    XTrain = loadImages(data_path, data_path + "/train.lst", 100)
+    YTrain = loadDataY(data_path, data_path + "/train.lst", output, 100)
     print(XTrain.shape)
     print(YTrain.shape)
 
     print("Loading validation data...")
-    XValidate = loadImages("./Dataset/validation.lst", 100)
-    YValidate = loadDataY("./Dataset/validation.lst", output, 100)
+    XValidate = loadImages(data_path, data_path + "/validation.lst", 100)
+    YValidate = loadDataY(data_path, data_path + "/validation.lst", output, 100)
     print(XValidate.shape)
     print(YValidate.shape)
 

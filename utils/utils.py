@@ -13,13 +13,13 @@ class DATA_TYPE(Enum):
 
 
 #It only loads our images, so we can dynamically load the Y making no more functions
-def loadImages(dataFile, samples):
+def loadImages(dataLoc, dataFile, samples):
     X = []
     loadedSamples = 0
     with open(dataFile) as paths:
         line = paths.readline()
         while line:
-            imagePath = line.split("\t")[0]
+            imagePath = dataLoc + line.split("\t")[0]
             image = cv2.imread(imagePath, False)
             X.append(image)
             line = paths.readline()
@@ -32,14 +32,14 @@ def loadImages(dataFile, samples):
 #Inputs
 #@dataFile -> Input File to get the data
 #@dataToLoadY -> Value from the enum
-def loadDataY(dataFile, type, samples):
+def loadDataY(dataLoc, dataFile, type, samples):
     Y = []
     YSequence = []
     loadedSamples = 0
     with open(dataFile) as paths:
         line = paths.readline()
         while line:
-            encodingPath = line.split("\t")[type]
+            encodingPath = dataLoc + line.split("\t")[type]
             encodingPath = encodingPath.split("\n")[0]
             yfile = open(encodingPath)
             #KRN and SKM files. Process it as a block.
