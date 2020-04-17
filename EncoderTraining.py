@@ -11,6 +11,8 @@ TRAINEPOCHS = 30
 #This encoder is only for agnostic to (kern - SKM)
 def EncoderTrain(output, data_path):
      
+     print("Training Encoder with - " + str(DATA_TYPE(output)))
+
      #Load train data
      XTrain = loadDataY(data_path, data_path + "/train.lst", (DATA_TYPE.AGNOSTIC).value, 100)
      YTrain = loadDataY(data_path, data_path + "/train.lst", output, 100)

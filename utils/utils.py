@@ -23,9 +23,9 @@ def loadImages(dataLoc, dataFile, samples):
             image = cv2.imread(imagePath, False)
             X.append(image)
             line = paths.readline()
-            loadedSamples+=1
-            if loadedSamples == samples:
-                break
+            #loadedSamples+=1
+            #if loadedSamples == samples:
+            #    break
 
     return np.array(X)
 
@@ -57,9 +57,9 @@ def loadDataY(dataLoc, dataFile, type, samples):
             yfile.close()
             line = paths.readline()
 
-            loadedSamples += 1
-            if loadedSamples == samples:
-                break
+            #loadedSamples += 1
+            #if loadedSamples == samples:
+            #    break
 
     return np.array(Y)
 

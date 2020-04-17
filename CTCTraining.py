@@ -10,6 +10,8 @@ vocabularyNames = ["agnostic", "kern", "skern"]
 def CTCTraining(output, data_path):
     fixed_height = 32
 
+    print("Training CTC with - " + str(DATA_TYPE(output)))
+
     print("Loading training data...")
     XTrain = loadImages(data_path, data_path + "/train.lst", 100)
     YTrain = loadDataY(data_path, data_path + "/train.lst", output, 100)
