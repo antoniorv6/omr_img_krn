@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import os
 import itertools
+import tensorflow as tf
 
 from keras import backend as K
 from keras.layers.convolutional import Conv2D, MaxPooling2D
@@ -11,6 +12,7 @@ from keras.layers import Reshape, Lambda, Permute
 from keras.models import Model
 from keras.layers.recurrent import GRU, LSTM
 from keras.layers import TimeDistributed, Bidirectional
+from keras.backend.tensorflow_backend import set_session
 
 
 # ===================================================
@@ -24,6 +26,9 @@ def ctc_lambda_func(args):
 
 # TODO Editar el modelo para que sea como el de tensorflow
 def get_model(input_shape, vocabulary_size):
+    
+    init_session()
+    
     conv_filters = [16,32,64]
 
     input_data = Input(name='the_input', shape=input_shape, dtype='float32')
@@ -69,3 +74,9 @@ def get_model(input_shape, vocabulary_size):
 
     # Nota: el modelo que se entrena es el que lleva ctc (model_tr) pero para guardarlo usamos el que no (model_pr)
     return model_tr, model_pr
+
+def init_session():
+    conf = tf.ConfigProto()
+    conf.gpu_options.allow_growth= True
+    sess = tf.Session(config=conf)
+    set_session(sess)
