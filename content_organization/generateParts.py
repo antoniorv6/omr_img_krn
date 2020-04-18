@@ -21,7 +21,6 @@ if __name__ == '__main__':
             line = datafile.readline()
 
     numofDocs = len(documents)
-    np.random.shuffle(documents)
 
     trainSlice = documents[:int(numofDocs*trainPerc)]
     valSlice = documents[int(numofDocs*trainPerc):int(numofDocs*trainPerc) + int(numofDocs*testPerc)]
