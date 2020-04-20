@@ -23,9 +23,9 @@ def loadImages(dataLoc, dataFile, samples):
             image = cv2.imread(imagePath, False)
             X.append(image)
             line = paths.readline()
-            loadedSamples+=1
-            if loadedSamples == samples:
-                break
+            #loadedSamples+=1
+            #if loadedSamples == samples:
+            #    break
 
     return np.array(X)
 
@@ -58,10 +58,10 @@ def loadDataY(dataLoc, dataFile, type, samples):
             YSequence = []
             yfile.close()
             line = paths.readline()
-
-            loadedSamples += 1
-            if loadedSamples == samples:
-                break
+            
+            #loadedSamples += 1
+            #if loadedSamples == samples:
+            #    break
 
     return np.array(Y)
 
@@ -85,9 +85,11 @@ def levenshtein(a,b):
 
     return current[n]
 
-def validateCTC(model, X, Y, i2w):
-    acc_ed = 0
-    acc_len = 0
+def getCTCValidationData(model, X, Y, i2w):
+    acc_ed_ser = 0
+    acc_ed_cer = 0
+    acc_len_ser = 0
+    acc_len_cer = 0
 
     for i in range(len(X)):
         pred = model.predict(np.expand_dims(np.expand_dims(X[i],axis=0),axis=-1))[0]
@@ -101,12 +103,24 @@ def validateCTC(model, X, Y, i2w):
             if c < len(i2w):  # CTC Blank must be ignored
                 decoded.append(i2w[c])
 
-        acc_ed += levenshtein(decoded,[i2w[label] for label in Y[i]])
-        acc_len += len(Y[i])
+        groundtruth = [i2w[label] for label in Y[i]]
+        acc_len_ser += len(Y[i])
+        acc_ed_ser += levenshtein(decoded, groundtruth)
 
-    ser = 100. * acc_ed / acc_len
+        separator = ""
+        concatPrediction = separator.join(decoded)
+        concatGT = separator.join(groundtruth)
+
+        acc_len_cer += len(concatGT)
+        acc_ed_cer += levenshtein(concatPrediction, concatGT)
+
+
+    ser = 100. * acc_ed_ser / acc_len_ser
+    cer = 100. * acc_ed_cer / acc_len_cer
     print("Validating with {} samples: {} SER".format(len(Y), str(ser)))
-    return ser
+    print("Validating with {} samples: {} CER".format(len(Y), str(cer)))
+    return ser, cer
+
 # Dados vectores de X (imagenes) e Y (secuencia de etiquetas numéricas -no one hot- devuelve los 4 vectores necesarios para CTC)
 def data_preparation_CTC(X, Y, height):
     # X_train, L_train

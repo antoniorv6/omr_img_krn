@@ -1,4 +1,4 @@
-from utils.utils import loadImages, loadDataY, DATA_TYPE, check_and_retrieveVocabulary, data_preparation_CTC, validateCTC
+from utils.utils import loadImages, loadDataY, DATA_TYPE, check_and_retrieveVocabulary, data_preparation_CTC, getCTCValidationData
 from model.ctc_keras import get_model
 from sklearn.utils import shuffle
 import numpy as np
@@ -32,10 +32,6 @@ def CTCTraining(output, data_path):
 
     print("Vocabulary size: " + str(len(w2i)))
 
-    print(YTrain[0])
-
-    sys.exit(0)
-
     for i in range(min(len(XTrain), len(YTrain))):
         img = (255. - XTrain[i]) / 255.
         width = int(float(fixed_height * img.shape[1]) / img.shape[0])
@@ -68,7 +64,7 @@ def CTCTraining(output, data_path):
 
     for super_epoch in range(50):
        model_tr.fit(inputs,outputs, batch_size = 16, epochs = 5, verbose = 2)
-       ser = validateCTC(model_pr, XValidate, YValidate, i2w)
+       ser, cer = getCTCValidationData(model_pr, XValidate, YValidate, i2w)
        if ser < best_ser:
            best_ser = ser
            model_pr.save("model/checkpoints/" + vocabularyNames[output-1] + "_model")
