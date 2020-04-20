@@ -60,12 +60,12 @@ def CTCTraining(output, data_path):
                  }
     
     outputs = {'ctc': np.zeros([len(X_train)])}
-    best_ser = 100
+    best_cer = 10000
 
     for super_epoch in range(50):
        model_tr.fit(inputs,outputs, batch_size = 16, epochs = 5, verbose = 2)
        ser, cer = getCTCValidationData(model_pr, XValidate, YValidate, i2w)
-       if ser < best_ser:
-           best_ser = ser
-           model_pr.save("model/checkpoints/" + vocabularyNames[output-1] + "_model")
-           print('SER Improved -> Saving model to {}'.format("model/checkpoints/" + vocabularyNames[output-1] + "_model.h5"))
+       if cer < best_cer:
+           best_cer = cer
+           model_pr.save("model/checkpoints/" + vocabularyNames[output-1] + "_model.h5")
+           print('CER Improved -> Saving model to {}'.format("model/checkpoints/" + vocabularyNames[output-1] + "_model.h5"))
