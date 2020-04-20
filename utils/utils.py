@@ -7,7 +7,7 @@ import itertools
 from os import path
 
 class DATA_TYPE(Enum):
-    AGNOSTIC = 1
+    PAEC = 1
     KERN = 2
     SKM = 3
 
@@ -23,9 +23,9 @@ def loadImages(dataLoc, dataFile, samples):
             image = cv2.imread(imagePath, False)
             X.append(image)
             line = paths.readline()
-            #loadedSamples+=1
-            #if loadedSamples == samples:
-            #    break
+            loadedSamples+=1
+            if loadedSamples == samples:
+                break
 
     return np.array(X)
 
@@ -50,16 +50,18 @@ def loadDataY(dataLoc, dataFile, type, samples):
                     krnLines[i] = line
                 YSequence = krnLines
             else:
-                YSequence = yfile.readline().split("\t")
+                #Load PAE file
+                YSequence = [char for char in yfile.readline()]
+                YSequence.remove(YSequence[-1]) #Erase the \n character which does not bring any relevant information
 
             Y.append(YSequence)
             YSequence = []
             yfile.close()
             line = paths.readline()
 
-            #loadedSamples += 1
-            #if loadedSamples == samples:
-            #    break
+            loadedSamples += 1
+            if loadedSamples == samples:
+                break
 
     return np.array(Y)
 

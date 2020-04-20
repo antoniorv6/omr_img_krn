@@ -3,7 +3,7 @@ from utils.utils import DATA_TYPE, loadDataY, data_preparation_CTC, check_and_re
 from sklearn.utils import shuffle
 import numpy as np
 
-vocabularyNames = ["enc_agnostic", "enc_kern", "enc_skern"]
+vocabularyNames = ["enc_paec", "enc_kern", "enc_skern"]
 
 BATCH_SIZE = 8
 TRAINEPOCHS = 30

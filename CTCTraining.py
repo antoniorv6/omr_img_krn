@@ -3,9 +3,10 @@ from model.ctc_keras import get_model
 from sklearn.utils import shuffle
 import numpy as np
 import cv2
+import sys
 
 
-vocabularyNames = ["agnostic", "kern", "skern"]
+vocabularyNames = ["paec", "kern", "skern"]
 
 def CTCTraining(output, data_path):
     fixed_height = 32
@@ -30,6 +31,10 @@ def CTCTraining(output, data_path):
     w2i, i2w = check_and_retrieveVocabulary([YTrain, YValidate], "./vocabulary", vocabularyNames[output-1])
 
     print("Vocabulary size: " + str(len(w2i)))
+
+    print(YTrain[0])
+
+    sys.exit(0)
 
     for i in range(min(len(XTrain), len(YTrain))):
         img = (255. - XTrain[i]) / 255.
@@ -68,4 +73,3 @@ def CTCTraining(output, data_path):
            best_ser = ser
            model_pr.save("model/checkpoints/" + vocabularyNames[output-1] + "_model")
            print('SER Improved -> Saving model to {}'.format("model/checkpoints/" + vocabularyNames[output-1] + "_model.h5"))
-           #print('SER Improved -> Saving model to')
