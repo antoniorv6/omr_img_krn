@@ -1,4 +1,4 @@
-from utils.utils import loadImages, loadDataY, DATA_TYPE, check_and_retrieveVocabulary, data_preparation_CTC, getCTCValidationData
+from utils.utils import loadImages, loadDataY, DATA_TYPE, check_and_retrieveVocabulary, data_preparation_CTC, getCTCValidationData, get_statistic_data, load_model_fromfile, loadVocabulary, getCTCTestData, save_image_asResult
 from model.ctc_keras import get_model
 from sklearn.utils import shuffle
 import numpy as np
@@ -7,9 +7,10 @@ import sys
 
 
 vocabularyNames = ["paec", "kern", "skern"]
+outputNames = [".pae",".krn", ".skm"]
 
 def CTCTraining(output, data_path):
-    fixed_height = 32
+    fixed_height = 64
 
     print("Training CTC with - " + str(DATA_TYPE(output)))
 
@@ -69,3 +70,104 @@ def CTCTraining(output, data_path):
            best_cer = cer
            model_pr.save("model/checkpoints/" + vocabularyNames[output-1] + "_model.h5")
            print('CER Improved -> Saving model to {}'.format("model/checkpoints/" + vocabularyNames[output-1] + "_model.h5"))
+
+def CTCTest(output, data_path):
+    fixed_height = 32
+    print("Testing CTC with - " + str(DATA_TYPE(output)))
+    print("Loading test data...")
+    XTest = loadImages(data_path, data_path + "/test.lst", 100)
+    YTest = loadDataY(data_path, data_path + "/test.lst", output, 100)
+    print(XTest.shape)
+    print(YTest.shape)
+
+    XTest, YTest = shuffle(XTest, YTest)
+
+    for i, image in enumerate(XTest):
+        save_image_asResult(image, str(i))
+    
+    for i in range(len(XTest)):
+        img = (255. - XTest[i]) / 255.
+        width = int(float(fixed_height * img.shape[1]) / img.shape[0])
+        XTest[i] = cv2.resize(img, (width, fixed_height))
+
+    i2w = loadVocabulary("./vocabulary/skerni2w.npy")
+    modelToTest = load_model_fromfile(vocabularyNames[output-1])
+
+    ser, cer = getCTCTestData(modelToTest, XTest, YTest, i2w, outputNames[output-1])
+
+def RetrieveStats(output,data_path):
+    print("CODIFICATION STATS")
+    print()
+    print("##### **KERN #####")
+    YTrain = loadDataY(data_path, data_path + "/train.lst", 2, 100)
+    YVal = loadDataY(data_path, data_path + "/validation.lst", 2, 100)
+    #YTest = loadDataY(data_path, data_path + "/test.lst", output, 100)
+    w2i, i2w = check_and_retrieveVocabulary([YTrain, YVal], "./vocabulary", vocabularyNames[1])
+
+    wordsNumber = 0
+    lengthList  = []
+    for element in YTrain:
+        lengthList.append(len(element))
+        wordsNumber+= len(element)
+    for element in YVal:
+        lengthList.append(len(element))
+        wordsNumber+= len(element)
+    
+    median, mode = get_statistic_data(lengthList)
+
+    print("Running words: " + str(wordsNumber))
+    print("Vocabulary size: " + str(len(w2i)))
+    print("Sequence elements median: " + str(median))
+    print("Sequence elements mode: " + str(mode))
+    print()
+    print("##################")
+    print()
+    print("##### **SKM #####")
+    YTrain = loadDataY(data_path, data_path + "/train.lst", 3, 100)
+    YVal = loadDataY(data_path, data_path + "/validation.lst", 3, 100)
+    #YTest = loadDataY(data_path, data_path + "/test.lst", output, 100)
+    w2i, i2w = check_and_retrieveVocabulary([YTrain, YVal], "./vocabulary", vocabularyNames[2])
+
+    wordsNumber = 0
+    lengthList  = []
+    for element in YTrain:
+        lengthList.append(len(element))
+        wordsNumber+= len(element)
+    for element in YVal:
+        lengthList.append(len(element))
+        wordsNumber+= len(element)
+    
+    median, mode = get_statistic_data(lengthList)
+    
+    print("Running words: " + str(wordsNumber))
+    print("Vocabulary size: " + str(len(w2i)))
+    print("Sequence elements median: " + str(median))
+    print("Sequence elements mode: " + str(mode))
+    print()
+    print("##################")
+    print()
+    print("##### PAEC #####")
+    YTrain = loadDataY(data_path, data_path + "/train.lst", 1, 100)
+    YVal = loadDataY(data_path, data_path + "/validation.lst", 1, 100)
+    #YTest = loadDataY(data_path, data_path + "/test.lst", output, 100)
+    w2i, i2w = check_and_retrieveVocabulary([YTrain, YVal], "./vocabulary", vocabularyNames[0])
+
+    wordsNumber = 0
+    lengthList  = []
+    for element in YTrain:
+        lengthList.append(len(element))
+        wordsNumber+= len(element)
+    for element in YVal:
+        lengthList.append(len(element))
+        wordsNumber+= len(element)
+    
+    median, mode = get_statistic_data(lengthList)
+
+    print("Running words: " + str(wordsNumber))
+    print("Vocabulary size: " + str(len(w2i)))
+    print("Sequence elements median: " + str(median))
+    print("Sequence elements mode: " + str(mode))
+    print()
+    print("##################")
+
+

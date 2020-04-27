@@ -5,6 +5,9 @@ import sys
 import tqdm
 import itertools
 from os import path
+from collections import Counter
+from keras.models import load_model
+import io
 
 class DATA_TYPE(Enum):
     PAEC = 1
@@ -121,6 +124,61 @@ def getCTCValidationData(model, X, Y, i2w):
     print("Validating with {} samples: {} CER".format(len(Y), str(cer)))
     return ser, cer
 
+def writeList(file, array):
+    for element in array:
+        file.write(element + "\n")
+
+def save_image_asResult(image, name):
+    cv2.imwrite("./test_results/" + name + ".jpg", image)
+
+def save_test_results(image, groundtruth, prediction, name, extension_name):
+    file = open("./test_results/" + name + extension_name, "w")
+    writeList(file, groundtruth)
+    file.close()
+    file = open("./test_results/" + name + "-prediction" + extension_name, "w")
+    writeList(file, prediction)
+    file.close()
+
+def getCTCTestData(model, X, Y, i2w, output_name):
+    acc_ed_ser = 0
+    acc_ed_cer = 0
+    acc_len_ser = 0
+    acc_len_cer = 0
+
+    for i in tqdm.tqdm(range(len(X))):
+        pred = model.predict(np.expand_dims(np.expand_dims(X[i],axis=0),axis=-1))[0]
+
+        out_best = np.argmax(pred,axis=1)
+
+        # Greedy decoding (TODO Cambiar por la funcion analoga del backend de keras)
+        out_best = [k for k, g in itertools.groupby(list(out_best))]
+        decoded = []
+        for c in out_best:
+            if c < len(i2w):  # CTC Blank must be ignored
+                decoded.append(i2w[c])
+        
+        ##Save files to test results
+        save_test_results(X[i], Y[i] ,decoded, str(i), output_name)
+
+        groundtruth = Y[i]
+        acc_len_ser += len(Y[i])
+        acc_ed_ser += levenshtein(decoded, groundtruth)
+
+        separator = ""
+        concatPrediction = separator.join(decoded)
+        concatGT = separator.join(groundtruth)
+
+        acc_len_cer += len(concatGT)
+        acc_ed_cer += levenshtein(concatPrediction, concatGT)
+
+
+    ser = 100. * acc_ed_ser / acc_len_ser
+    cer = 100. * acc_ed_cer / acc_len_cer
+    print("Validating with {} samples: {} SER".format(len(Y), str(ser)))
+    print("Validating with {} samples: {} CER".format(len(Y), str(cer)))
+    return ser, cer
+
+
 # Dados vectores de X (imagenes) e Y (secuencia de etiquetas numéricas -no one hot- devuelve los 4 vectores necesarios para CTC)
 def data_preparation_CTC(X, Y, height):
     # X_train, L_train
@@ -228,3 +286,25 @@ def test_encoderSequence(sequence, model, w2itarget, i2wtarget, trueSequence):
         predicted.append(i2wtarget[np.argmax(prediction[0][-1])])
 
     return predicted, trueSequence
+
+def get_statistic_data(dataList):
+    
+    listLength = len(dataList)
+    #Median
+    median = np.median(dataList)
+
+    #Mode
+    data = Counter(dataList)
+    get_mode = dict(data)
+    mode = [k for k, v in get_mode.items() if v == max(list(data.values()))] 
+
+    return median, mode
+
+def load_model_fromfile(outputName):
+    path = "./model/checkpoints/" + outputName + "_model.h5"
+    model = load_model(path)
+    return model
+
+def loadVocabulary(path):
+    vocabulary = np.load(path, allow_pickle=True).item()
+    return vocabulary

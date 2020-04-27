@@ -1,4 +1,4 @@
-from CTCTraining import CTCTraining
+from CTCTraining import CTCTraining, RetrieveStats, CTCTest
 import EncoderTraining
 from utils.utils import DATA_TYPE
 import argparse
@@ -14,4 +14,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     
-    CTCTraining(args.output, args.data_path)
+    #CTCTraining(args.output, args.data_path)
+    CTCTest(args.output, args.data_path)
+    #RetrieveStats((DATA_TYPE.KERN).value, args.data_path)
+    
