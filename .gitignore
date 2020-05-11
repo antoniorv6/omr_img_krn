@@ -2,3 +2,5 @@
 __pycache__/
 Dataset/Data/
 env/
+test_results/
+for_test/
