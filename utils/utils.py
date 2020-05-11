@@ -8,11 +8,15 @@ from os import path
 from collections import Counter
 from keras.models import load_model
 import io
+from shutil import move
+
+kernCharsToErase = ['y', '/', '\'', 'k', 'kk', 'K', 'KK', 'J', 'JJ', 'L', 'LL', '=', '==', '_']
 
 class DATA_TYPE(Enum):
     PAEC = 1
     KERN = 2
     SKM = 3
+    AGNOSTIC = 4
 
 
 #It only loads our images, so we can dynamically load the Y making no more functions
@@ -52,10 +56,12 @@ def loadDataY(dataLoc, dataFile, type, samples):
                     line = line.split("\n")[0] #Dumb trick to get the characters without breaks
                     krnLines[i] = line
                 YSequence = krnLines
-            else:
+            elif (type == (DATA_TYPE.PAEC).value):
                 #Load PAE file
                 YSequence = [char for char in yfile.readline()]
                 YSequence.remove(YSequence[-1]) #Erase the \n character which does not bring any relevant information
+            else:
+                YSequence = yfile.readline().split("\t") #Load the agnostic file
 
             Y.append(YSequence)
             YSequence = []
@@ -126,24 +132,70 @@ def getCTCValidationData(model, X, Y, i2w):
 
 def writeList(file, array):
     for element in array:
-        file.write(element + "\n")
+        file.write(element + " ")
 
 def save_image_asResult(image, name):
-    cv2.imwrite("./test_results/" + name + ".jpg", image)
+    cv2.imwrite("test_results/"+name+".jpg", image)
 
-def save_test_results(image, groundtruth, prediction, name, extension_name):
-    file = open("./test_results/" + name + extension_name, "w")
+def save_test_results(file, groundtruth, prediction, name, SER, CER):
+    file.write(" " + name + ".jpg \n")
+    file.write("SER - " + SER)
+    file.write("\n")
+    file.write("CER - " + CER)
+    file.write("\n")
+    file.write("Ground truth:" + "\n")
     writeList(file, groundtruth)
-    file.close()
-    file = open("./test_results/" + name + "-prediction" + extension_name, "w")
+    file.write("\n")
+    file.write("Prediction:" + "\n")
     writeList(file, prediction)
-    file.close()
+    file.write("\n")
+    file.write("---------------------------------------\n")
+    #file.close()
+    #file = open("./test_results/" + name + "-prediction" + extension_name, "w")
+    #writeList(file, prediction)
+    #file.close()
+
+def clean_sequence(sequence):
+    clean_sequence = []
+    for i, element in enumerate(sequence):
+        if i > 0:
+            for character in kernCharsToErase:
+                element = element.replace(character, '')
+            clean_sequence.append(element)
+        else:
+            clean_sequence.append(element)
+
+    return clean_sequence
+
+def search_confusions(groundtruth, prediction, file, image):
+    file.write(str(image) + ".jpg\n")
+    try:
+        for i, element in enumerate(prediction):
+            edit_distance = levenshtein(element, groundtruth[i])
+            if edit_distance > 0:
+                file.write(groundtruth[i] + "\t" + element + "\t" + str(edit_distance) + "\n")
+    except IndexError:
+        return
+    file.write("---------------------------------------\n")
 
 def getCTCTestData(model, X, Y, i2w, output_name):
     acc_ed_ser = 0
     acc_ed_cer = 0
     acc_len_ser = 0
     acc_len_cer = 0
+    sequence_error = 0
+    sequence_error_clean = 0
+
+    acc_ed_ser_clean = 0
+    acc_ed_cer_clean = 0
+    acc_len_ser_clean = 0
+    acc_len_cer_clean = 0
+
+    file = open("./test_results/results_raw"+ output_name + ".txt" , "w")
+    file_clean = open("./test_results/results_clean"+ output_name + ".txt" , "w")
+    file_confusion = open("./test_results/confusion_raw.txt", "w")
+    file_confusion_clean = open("./test_results/confusion_clean.txt", "w")
+
 
     for i in tqdm.tqdm(range(len(X))):
         pred = model.predict(np.expand_dims(np.expand_dims(X[i],axis=0),axis=-1))[0]
@@ -158,24 +210,78 @@ def getCTCTestData(model, X, Y, i2w, output_name):
                 decoded.append(i2w[c])
         
         ##Save files to test results
-        save_test_results(X[i], Y[i] ,decoded, str(i), output_name)
 
         groundtruth = Y[i]
         acc_len_ser += len(Y[i])
-        acc_ed_ser += levenshtein(decoded, groundtruth)
+        distance_edition = levenshtein(decoded, groundtruth)
+        acc_ed_ser += distance_edition
+        
+        if distance_edition is not 0:
+            sequence_error += 1
+            search_confusions(groundtruth, decoded, file_confusion, i)
+        
+        local_ser = 100.*distance_edition / len(groundtruth)
 
         separator = ""
         concatPrediction = separator.join(decoded)
         concatGT = separator.join(groundtruth)
 
         acc_len_cer += len(concatGT)
-        acc_ed_cer += levenshtein(concatPrediction, concatGT)
+        distance_characters = levenshtein(concatPrediction, concatGT)
+        acc_ed_cer += distance_characters 
 
+        local_cer = 100.*distance_characters/len(concatGT)
+
+        save_test_results(file, groundtruth, decoded, str(i), str(local_ser), str(local_cer))
+
+        ##PROCESSED WITH THE UNCLEAN ONE, now we get into cleaning
+
+        clean_gt = clean_sequence(groundtruth)
+        clean_prediction = clean_sequence(decoded)
+
+        distance_edition = levenshtein(clean_gt, clean_prediction)
+        acc_ed_ser_clean += distance_edition
+        acc_len_ser_clean += len(clean_gt)
+
+        if distance_edition is not 0:
+            sequence_error_clean += 1
+            search_confusions(clean_gt, clean_prediction, file_confusion_clean, i)
+        
+        local_ser = 100.*distance_edition / len(clean_gt)
+
+        separator = ""
+        concatPrediction = separator.join(clean_prediction)
+        concatGT = separator.join(clean_gt)
+
+        acc_len_cer_clean += len(concatGT)
+        distance_characters = levenshtein(concatPrediction, concatGT)
+        acc_ed_cer_clean += distance_characters 
+
+        local_cer = 100.*distance_characters/len(concatGT)
+
+        save_test_results(file_clean, clean_gt, clean_prediction, str(i), str(local_ser), str(local_cer))
 
     ser = 100. * acc_ed_ser / acc_len_ser
     cer = 100. * acc_ed_cer / acc_len_cer
-    print("Validating with {} samples: {} SER".format(len(Y), str(ser)))
-    print("Validating with {} samples: {} CER".format(len(Y), str(cer)))
+    sequence_error = 100. * sequence_error / len(Y)
+    
+    ser_clean = 100. * acc_ed_ser_clean / acc_len_ser_clean
+    cer_clean = 100. * acc_ed_cer_clean / acc_len_cer_clean
+    sequence_error_disp = 100. * sequence_error_clean / len(Y)
+    
+    print("{} SER".format(str(ser)))
+    print("{} CER".format(str(cer)))
+    print("{} Sequence Error Rate".format(str(sequence_error)))
+    print()
+    print("{} SER CLEAN".format(str(ser_clean)))
+    print("{} CER CLEAN".format(str(cer_clean)))
+    print("{} Sequence Error Rate clean".format(str(sequence_error_disp)))
+
+    file.close()
+    file_clean.close()
+    file_confusion.close()
+    file_confusion_clean.close()
+
     return ser, cer
 
 
@@ -269,16 +375,18 @@ def batch_generator_encoder(X, Y, batch_size, targetLength, w2iagnostic, w2itarg
         index = (index + batch_size) % len(X)
 
 def test_encoderSequence(sequence, model, w2itarget, i2wtarget, trueSequence):
-    decoded = [0]
+    decoded = [0] #Dummy vector
+    #decoded = [w2itarget['<s>']]
     predicted = []
 
-    trueSequence = [[i2wtarget[i] for i in trueSequence]]
+    #trueSequence = [[i2wtarget[i] for i in trueSequence]]
 
     for i in range(1, 500):
         decoder_input = np.asarray([decoded])
         
         prediction = model.predict([[sequence], decoder_input])
-        decoded.append(0)
+        decoded.append(0) #[0,0]
+        #decoded.append(i2wtarget[np.argmax(prediction[0][-1])]) [<s>, **kern]
 
         if i2wtarget[np.argmax(prediction[0][-1])] == '</s>':
             break
