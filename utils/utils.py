@@ -14,9 +14,9 @@ kernCharsToErase = ['y', '/', '\'', 'k', 'kk', 'K', 'KK', 'J', 'JJ', 'L', 'LL', 
 
 class DATA_TYPE(Enum):
     PAEC = 1
-    KERN = 2
+    AGNOSTIC = 2
     SKM = 3
-    AGNOSTIC = 4
+    KERN = 4
 
 
 #It only loads our images, so we can dynamically load the Y making no more functions

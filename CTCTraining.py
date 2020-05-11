@@ -6,8 +6,8 @@ import cv2
 import sys
 
 
-vocabularyNames = ["paec", "kern", "skern", "agnostic"]
-outputNames = [".pae",".krn", ".skm", ".agnostic"]
+vocabularyNames = ["paec","agnostic", "skern", "kern"]
+outputNames = [".pae",".agnostic", ".krn", ".skm"]
 
 def CTCTraining(output, data_path):
     fixed_height = 64
